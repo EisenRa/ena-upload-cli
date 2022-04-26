@@ -278,6 +278,12 @@ def attributetest(row, column):
                 <VALUE>${row['propagation']}</VALUE>
             </SAMPLE_ATTRIBUTE>
             </py:if>
+            <py:if test="attributetest(row, 'sample derived from')">
+            <SAMPLE_ATTRIBUTE>
+                <TAG>sample derived from</TAG>
+                <VALUE>${row['sample derived from']}</VALUE>
+            </SAMPLE_ATTRIBUTE>
+            </py:if>
             <py:if test="attributetest(row, 'amount or size of sample collected')">
             <SAMPLE_ATTRIBUTE>
                 <TAG>amount or size of sample collected</TAG>
