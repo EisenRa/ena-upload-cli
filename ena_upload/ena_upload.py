@@ -87,7 +87,7 @@ def check_columns(df, schema, action, dev, auto_action):
     # checking for optional columns and if not present, adding them
     if schema == 'sample':
         optional_columns = ['accession', 'submission_date',
-                            'status', 'scientific_name', 'taxon_id']
+                            'status', 'scientific_name', 'tax_id']
     elif schema == 'run':
         optional_columns = ['accession',
                             'submission_date', 'status', 'file_checksum']
@@ -350,12 +350,12 @@ def get_md5(filepath):
     return md5sum.hexdigest()
 
 
-def get_taxon_id(scientific_name):
+def get_tax_id(scientific_name):
     """Get taxon ID for input scientific_name.
 
     :param scientific_name: scientific name of sample that distinguishes
                             its taxonomy
-    :return taxon_id: NCBI taxonomy identifier
+    :return tax_id: NCBI taxonomy identifier
     """
     # endpoint for taxonomy id
     url = 'http://www.ebi.ac.uk/ena/taxonomy/rest/scientific-name'
@@ -365,29 +365,29 @@ def get_taxon_id(scientific_name):
     scientific_name = '%20'.join(scientific_name.strip().split())
     r = session.get(f"{url}/{scientific_name}")
     try:
-        taxon_id = r.json()[0]['taxId']
-        return taxon_id
+        tax_id = r.json()[0]['taxId']
+        return tax_id
     except ValueError:
         msg = f'Oops, no taxon ID avaible for {scientific_name}. Is it a valid scientific name?'
         sys.exit(msg)
 
 
-def get_scientific_name(taxon_id):
-    """Get scientific name for input taxon_id.
+def get_scientific_name(tax_id):
+    """Get scientific name for input tax_id.
 
-    :param taxon_id: NCBI taxonomy identifier
+    :param tax_id: NCBI taxonomy identifier
     :return scientific_name: scientific name of sample that distinguishes its taxonomy
     """
     # endpoint for scientific name
     url = 'http://www.ebi.ac.uk/ena/taxonomy/rest/tax-id'
     session = requests.Session()
     session.trust_env = False
-    r = session.get(f"{url}/{str(taxon_id).strip()}")
+    r = session.get(f"{url}/{str(tax_id).strip()}")
     try:
-        taxon_id = r.json()['scientificName']
-        return taxon_id
+        tax_id = r.json()['scientificName']
+        return tax_id
     except ValueError:
-        msg = f'Oops, no scientific name avaible for {taxon_id}. Is it a valid taxon_id?'
+        msg = f'Oops, no scientific name avaible for {tax_id}. Is it a valid tax_id?'
         sys.exit(msg)
 
 
@@ -552,14 +552,14 @@ def update_table(schema_dataframe, schema_targets, schema_update):
     'schema' -- a string - 'study', 'sample','run', 'experiment'
     'dataframe' -- a pandas dataframe created from the input tables
     'targets' -- a filtered dataframe with 'action' keywords
-                 contains updated columns - md5sum and taxon_id
+                 contains updated columns - md5sum and tax_id
     'update' -- a dataframe with updated columns - 'alias', 'accession',
                 'submission_date'
 
     :return schema_dataframe: a dictionary - {schema:dataframe}
                               dataframe -- updated accession, status,
                                            submission_date,
-                                           md5sum, taxon_id
+                                           md5sum, tax_id
     """
 
     for schema in schema_update.keys():
@@ -579,7 +579,7 @@ def update_table(schema_dataframe, schema_targets, schema_update):
 
             if schema == 'sample':
                 dataframe.loc[index,
-                              'taxon_id'] = targets.loc[index, 'taxon_id']
+                              'tax_id'] = targets.loc[index, 'tax_id']
             elif schema == 'run':
                 # Since index is set to alias
                 # then targets of run can have multiple rows with
@@ -604,7 +604,7 @@ def update_table_simple(schema_dataframe, schema_targets, action):
     'schema' -- a string - 'study', 'sample','run', 'experiment'
     'dataframe' -- a pandas dataframe created from the input tables
     'targets' -- a filtered dataframe with 'action' keywords
-                 contains updated columns - md5sum and taxon_id
+                 contains updated columns - md5sum and tax_id
 
     :return schema_dataframe: a dictionary - {schema:dataframe}
                               dataframe -- updated status
@@ -925,17 +925,17 @@ def main():
             df = schema_targets['sample']
             print('Retrieving taxon IDs and scientific names if needed')
             for index, row in df.iterrows():
-                if pd.notna(row['scientific_name']) and pd.isna(row['taxon_id']):
+                if pd.notna(row['scientific_name']) and pd.isna(row['tax_id']):
                     # retrieve taxon id using scientific name
-                    taxonID = get_taxon_id(row['scientific_name'])
-                    df.loc[index, 'taxon_id'] = taxonID
-                elif pd.notna(row['taxon_id']) and pd.isna(row['scientific_name']):
+                    taxonID = get_tax_id(row['scientific_name'])
+                    df.loc[index, 'tax_id'] = taxonID
+                elif pd.notna(row['tax_id']) and pd.isna(row['scientific_name']):
                     # retrieve scientific name using taxon id
-                    scientificName = get_scientific_name(row['taxon_id'])
+                    scientificName = get_scientific_name(row['tax_id'])
                     df.loc[index, 'scientific_name'] = scientificName
-                elif pd.isna(row['taxon_id']) and pd.isna(row['scientific_name']):
+                elif pd.isna(row['tax_id']) and pd.isna(row['scientific_name']):
                     sys.exit(
-                        f"No taxon_id or scientific_name was given with sample {row['alias']}.")
+                        f"No tax_id or scientific_name was given with sample {row['alias']}.")
             print('Taxon IDs and scientific names are retrieved')
             schema_targets['sample'] = df
 
